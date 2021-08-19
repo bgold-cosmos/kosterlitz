@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html lang='en'>
+<head>
+ <title> Flame </title>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+
+<body>
+<h1>flame</h1>
+<div>
+  <canvas id="output" height="100" width="100">
+  </canvas>
+</div>
+<div>
+a = 
+<input type="number" min="0.01" max="0.16" value="0.08" step="0.01" id="a"/>
+</div>
+<button onclick="restart()">restart</button>
+
+
+
+<!-- END PAGE -->
+
+<script type="text/javascript">
+
+var ctx = output.getContext("2d");
+var dt = 0.001;
+var nt = 1000;
+var drawRatio = 2;
+var drawmin = -1.0;
+var drawmax = 8.0;
+var xsize = 200;
+var ysize = 200;
+var a = 0.08;
+var dx = 0.5;
+var stride = 2;
+var y = new Array(xsize);
+var buf = new Array(stride);
+
+timer = {};
+
+restart();
+
+function restart() {
+  output.height = ysize * drawRatio;
+  output.width = xsize * drawRatio;
+  ctx.clearRect(0,0,output.width,output.height);
+  for (var i=0; i<xsize; i++) {
+    y[i] = Math.random()-0.5;
+  }
+  clearInterval(timer);
+  line = 0;
+  timer = setInterval( linestep, 10);
+}
+
+function linestep() {
+  a = document.getElementById("a").value;
+  for (var ib=0; ib<stride; ib++) {
+    for (var it=0; it<nt; it++) {
+      y = add(y, smult(dt, ode(y)));
+    }
+    buf[ib] = y;
+  }
+  // console.log(y);
+  // draw output
+  for (var iy=0; iy<stride; iy++) {
+    for (var ix=0; ix<xsize; ix++) {
+      ctx.fillStyle = "hsl(0, 100%, "+(rescale(buf[iy][ix])*100.0)+"%)";
+      ctx.fillRect(ix*drawRatio,(ysize-line)*drawRatio, drawRatio, drawRatio);
+    }
+    line = line + 1;
+  }
+  if (line == ysize) {
+    clearInterval(timer);
+  }
+}
+
+function rescale(x) {
+  return (x - drawmin)/(drawmax-drawmin);
+}
+
+function ode(y) {
+  var dx2 = dx * dx;
+  var dx4 = dx2 * dx2;
+  var y2 = rotate(y,2);
+  var y1 = rotate(y,1);
+  var ym1 = rotate(y,-1);
+  var ym2 = rotate(y,-2);
+  var d2y = add(add(y1,ym1), smult(-2.0, y));
+  var d4y = add(add(y2,ym2), smult(6.0, y));
+  d4y = add(d4y, smult(-4.0, add(y1,ym1)));
+  var dy2 = add(y1, negate(ym1));
+  dy2 = mult(dy2, dy2);
+  var term1 = smult(-a, y);
+  var term2 = smult(-1.0 / dx2, d2y);
+  var term3 = smult(-1.0 / dx4, d4y);
+  var term4 = smult(0.25 / dx2, dy2);
+  return add(add(add(term1, term2), term3), term4);
+}
+
+function negate(x) {
+  var n = x.length;
+  var rval = Array(n);
+  for (var i=0; i<n; i++) { rval[i] = -x[i]; }
+  return rval; 
+}
+
+function add(x,y) {
+  var n = x.length;
+  var rval = Array(n);
+  for (var i=0; i<n; i++) { rval[i] = x[i] + y[i]; }
+  return rval; 
+}
+
+function mult(x,y) {
+  var n = x.length;
+  var rval = Array(n);
+  for (var i=0; i<n; i++) { rval[i] = x[i] * y[i]; }
+  return rval; 
+}
+
+function smult(x,y) {
+  var n = y.length;
+  var rval = Array(n);
+  for (var i=0; i<n; i++) { rval[i] = x * y[i]; }
+  return rval; 
+}
+
+function rotate(x,n) {
+  return x.slice(n).concat(x.slice(0,n));
+}
+
+</script>
+
+</body>
+</html>
+
